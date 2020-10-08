@@ -7,12 +7,12 @@ import (
 	gogotypes "github.com/gogo/protobuf/types"
 	tmstrings "github.com/tendermint/tendermint/libs/strings"
 
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 )
 
 func NewHandler(k keeper.Keeper) sdk.Handler {
@@ -56,7 +56,7 @@ func handleMsgCreateValidator(ctx sdk.Context, msg *types.MsgCreateValidator, k 
 		return nil, types.ErrValidatorOwnerExists
 	}
 
-	codectypes.PackAny(msg.Pubkey)
+   xxx	codectypes.PackAny(msg.P)
 	pk, err := sdk.GetPubKeyFromBech32(sdk.Bech32PubKeyTypeConsPub, msg.Pubkey)
 	if err != nil {
 		return nil, err

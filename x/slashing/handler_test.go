@@ -26,7 +26,6 @@ func TestCannotUnjailUnlessJailed(t *testing.T) {
 	// initial setup
 	app := simapp.Setup(false)
 	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
-
 	pks := simapp.CreateTestPubKeys(1)
 	simapp.AddTestAddrsFromPubKeys(app, ctx, pks, sdk.TokensFromConsensusPower(200))
 
@@ -60,31 +59,19 @@ func TestCannotUnjailUnlessMeetMinSelfDelegation(t *testing.T) {
 	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
 	pks := simapp.CreateTestPubKeys(1)
 	simapp.AddTestAddrsFromPubKeys(app, ctx, pks, sdk.TokensFromConsensusPower(200))
-	ss := teststaking.NewHandlerT(ctx, app.StakingKeeper)
 
+	tstaking := teststaking.NewService(ctx, app.StakingKeeper)
 	slh := slashing.NewHandler(app.SlashingKeeper)
-	amtInt := int64(100)
-	addr, val, amt := sdk.ValAddress(pks[0].Address()), pks[0], sdk.TokensFromConsensusPower(amtInt)
-	msg := keeper.NewTestMsgCreateValidator(addr, val, amt)
-	msg.MinSelfDelegation = amt
-
-	res, err := staking.NewHandler(app.StakingKeeper)(ctx, msg)
-	require.NoError(t, err)
-	require.NotNil(t, res)
+	addr, val := sdk.ValAddress(pks[0].Address()), pks[0]
+	amt := tstaking.CreateValidatorWithValPower(t, addr, val, 100, teststaking.ZeroCommission())
 
 	staking.EndBlocker(ctx, app.StakingKeeper)
-
 	require.Equal(
 		t, app.BankKeeper.GetAllBalances(ctx, sdk.AccAddress(addr)),
 		sdk.Coins{sdk.NewCoin(app.StakingKeeper.GetParams(ctx).BondDenom, keeper.InitTokens.Sub(amt))},
 	)
 
-	unbondAmt := sdk.NewCoin(app.StakingKeeper.GetParams(ctx).BondDenom, sdk.OneInt())
-	undelegateMsg := stakingtypes.NewMsgUndelegate(sdk.AccAddress(addr), addr, unbondAmt)
-	res, err = staking.NewHandler(app.StakingKeeper)(ctx, undelegateMsg)
-	require.NoError(t, err)
-	require.NotNil(t, res)
-
+	tstaking.Undelegate(t, sdk.AccAddress(addr), addr, 1, app.StakingKeeper.GetParams(ctx).BondDenom)
 	require.True(t, app.StakingKeeper.Validator(ctx, addr).IsJailed())
 
 	// assert non-jailed validator can't be unjailed
@@ -179,7 +166,6 @@ func TestHandleAbsentValidator(t *testing.T) {
 	// initial setup
 	app := simapp.Setup(false)
 	ctx := app.BaseApp.NewContext(false, tmproto.Header{Time: time.Unix(0, 0)})
-
 	pks := simapp.CreateTestPubKeys(1)
 	simapp.AddTestAddrsFromPubKeys(app, ctx, pks, sdk.TokensFromConsensusPower(200))
 	app.SlashingKeeper.SetParams(ctx, keeper.TestParams())

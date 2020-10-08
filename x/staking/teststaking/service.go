@@ -28,7 +28,6 @@ func NewService(ctx sdk.Context, k keeper.Keeper) *Service {
 func (sh *Service) CreateValidator(t *testing.T, addr sdk.ValAddress, pk crypto.PubKey, stakeAmount int64, cr stakingtypes.CommissionRates) {
 	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(stakeAmount))
 	sh.createValidator(t, addr, pk, coin, cr)
-
 }
 
 // CreateValidatorWithValPower calls handler to create a new staking validator
@@ -59,9 +58,22 @@ func (sh *Service) DelegateWithPower(t *testing.T, delAddr sdk.AccAddress, valAd
 	sh.Handle(t, msg)
 }
 
+// Undelegate calls handler to unbound some stake from a validator.
+func (sh *Service) Undelegate(t *testing.T, delAddr sdk.AccAddress, valAddr sdk.ValAddress, amount int64, bondDenom string) {
+	unbondAmt := sdk.NewCoin(bondDenom, amount)
+	// TODO RZ search for other occurances and update in the code
+	msg := stakingtypes.NewMsgUndelegate(sdk.AccAddress(addr), addr, unbondAmt)
+	sh.Handle(t, msg)
+}
+
 // Handle calls staking handler on a given message
 func (sh *Service) Handle(t *testing.T, msg sdk.Msg) {
 	res, err := sh.h(sh.ctx, msg)
 	require.NoError(t, err)
 	require.NotNil(t, res)
+}
+
+// ZeroCommission constructs a commission rates with all zeros.
+func ZeroCommission() stakingtypes.CommissionRates {
+	return stakingtypes.NewCommissionRates(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec())
 }
